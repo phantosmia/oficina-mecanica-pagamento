@@ -129,7 +129,21 @@ docker compose up --build
 
 Sobe PostgreSQL, LocalStack (SQS/SNS), Mailpit (`http://localhost:8026`), migrations, API (`http://localhost:8005`), worker e relay. O e-mail com o link de pagamento aparece no Mailpit.
 
-Para pagar no sandbox: abra o link, entre com o **usuário comprador de teste** (Mercado Pago Developers → Suas integrações → Contas de teste) e use um [cartão de teste](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/test-cards). O **nome do titular** escolhe o resultado: `APRO` aprova, `OTHE` recusa (CPF `12345678909`). Ao voltar do checkout, a página de retorno já mostra o pagamento confirmado.
+Para pagar no sandbox: abra o link, entre com o **usuário comprador de teste** (Mercado Pago Developers → Suas integrações → Contas de teste), escolha **"Novo cartão"** e digite um dos [cartões de teste do Checkout Pro via Orders](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-orders/integration-test/test-purchase-with-card):
+
+| Cartão | Número | CVV | Validade |
+|---|---|---|---|
+| Mastercard (crédito) | `5480 8328 0103 3311` | `123` | `11/30` |
+| Visa (crédito) | `4235 6477 2802 5682` | `123` | `11/30` |
+
+O **nome do titular** escolhe o resultado: `APRO` aprova; `OTHE` (erro geral) ou `FUND` (saldo insuficiente) recusam. CPF `12345678909`.
+
+Comportamentos conferidos no sandbox pelo navegador (2026-10-10):
+
+- **Pagamento aprovado**: a cobrança vai a `processed / accredited` e o comprador volta para `/pagamentos/{charge_id}/retorno`, que já mostra "Pagamento confirmado" (a confirmação veio por esse caminho).
+- **Cartão recusado não encerra a cobrança**: ela vai a `action_required / waiting_retry`, com a tentativa registrada como `failed`, e o checkout oferece outro cartão ou outro meio. Este serviço trata `action_required` como pendente: a saga continua esperando, e a recusa definitiva só vem com a expiração (`PAYMENT_EXPIRATION`) ou com o prazo de pagamento da saga.
+- **Cartão salvo na conta do comprador de teste ignora o nome digitado** e aprova; para testar recusa, use "Novo cartão".
+- **Cartões de outras páginas da documentação** (ex.: `5031 4332 1540 6351`, que aparece em outros produtos do Mercado Pago) são rejeitados por este checkout com "A transação não aceita este meio de pagamento".
 
 ### Testes
 
