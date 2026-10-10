@@ -1,0 +1,51 @@
+# Worker: consome a fila de comandos da saga (CriarCobranca, CancelarCobranca,
+# EstornarPagamento) e reconcilia periodicamente as cobranças pendentes com o
+# Mercado Pago. Uma réplica basta (a reconciliação é idempotente, mas várias
+# réplicas só consultariam o provedor em dobro).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pagamento-worker
+  namespace: oficina-pagamento
+  labels:
+    app.kubernetes.io/name: pagamento-worker
+    app.kubernetes.io/part-of: oficina-mecanica
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pagamento-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pagamento-worker
+        app.kubernetes.io/part-of: oficina-mecanica
+    spec:
+      containers:
+        - name: worker
+          image: oficina-mecanica-pagamento:latest
+          imagePullPolicy: Always
+          args: ["worker"]
+          envFrom:
+            - configMapRef:
+                name: pagamento-config
+            - secretRef:
+                name: pagamento-secret
+          env:
+            - name: NEW_RELIC_APP_NAME
+              value: oficina-mecanica-pagamento-worker
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

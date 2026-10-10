@@ -1,0 +1,114 @@
+# Ambiente local do Pagamento: PostgreSQL + LocalStack (SQS/SNS) + Mailpit +
+# migrations + API + worker + relay da outbox, falando com o **sandbox real**
+# do Mercado Pago.
+#
+# Credenciais: crie um arquivo `.env` (ignorado pelo Git) com
+#   MERCADO_PAGO_ACCESS_TOKEN=<access token das credenciais de TESTE>
+#   MERCADO_PAGO_PAYER_EMAIL_OVERRIDE=<qualquer e-mail @testuser.com>
+# O docker-compose com os 6 microsserviços juntos fica no repositório
+# oficina-mecanica-fiap (OS Service).
+x-pagamento-env: &pagamento-env
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: pagamento
+  POSTGRES_PASSWORD: pagamento
+  POSTGRES_DB: oficina_pagamento
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  AWS_REGION: us-east-1
+  AWS_ENDPOINT_URL: http://localstack:4566
+  PAGAMENTO_EVENTS_TOPIC_ARN: arn:aws:sns:us-east-1:000000000000:pagamento-eventos
+  PAGAMENTO_COMMANDS_QUEUE_URL: http://localstack:4566/000000000000/pagamento-comandos
+  PUBLIC_BASE_URL: http://localhost:8005
+  RECONCILE_INTERVAL_SECONDS: "15"
+  JWT_SECRET_KEY: change-me-in-production
+  ADMIN_USERNAME: admin
+  SMTP_ENABLED: "true"
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  SMTP_FROM: pagamentos@oficina.local
+
+x-pagamento-service: &pagamento-service
+  build: .
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    <<: *pagamento-env
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pagamento-db
+    environment:
+      POSTGRES_USER: pagamento
+      POSTGRES_PASSWORD: pagamento
+      POSTGRES_DB: oficina_pagamento
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pagamento -d oficina_pagamento"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  localstack:
+    image: localstack/localstack:4
+    container_name: pagamento-localstack
+    environment:
+      SERVICES: sns,sqs
+    ports:
+      - "4570:4566"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pagamento-mailpit
+    ports:
+      - "8026:8025"   # caixa de entrada: http://localhost:8026
+
+  migrate:
+    <<: *pagamento-service
+    container_name: pagamento-migrate
+    command: ["migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *pagamento-service
+    container_name: pagamento-api
+    environment:
+      <<: *pagamento-env
+      BOOTSTRAP_LOCAL_RESOURCES: "true"
+    ports:
+      - "8005:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      localstack:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  worker:
+    <<: *pagamento-service
+    container_name: pagamento-worker
+    command: ["worker"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  outbox-relay:
+    <<: *pagamento-service
+    container_name: pagamento-outbox-relay
+    command: ["relay"]
+    depends_on:
+      api:
+        condition: service_healthy

@@ -1,0 +1,11 @@
+# O comprador volta do checkout para a API do Pagamento (URL de retorno), de
+# fora do cluster. O webhook do Mercado Pago exige HTTPS, que o Service
+# LoadBalancer do Lab não oferece: nesse ambiente a confirmação vem do retorno
+# do comprador e da reconciliação (README, "Confirmação do pagamento").
+apiVersion: v1
+kind: Service
+metadata:
+  name: pagamento-api
+  namespace: oficina-pagamento
+spec:
+  type: LoadBalancer

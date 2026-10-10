@@ -1,0 +1,14 @@
+# Deploy no EKS do AWS Academy Lab. Os placeholders REPLACE_WITH_* são
+# substituídos pelo pipeline de deploy com os outputs do Terraform do serviço
+# (RDS, fila, tópico) e a URL do ECR.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  - path: patch-configmap.yaml
+  - path: patch-service-loadbalancer.yaml
+images:
+  - name: oficina-mecanica-pagamento
+    newName: REPLACE_WITH_ECR_REPOSITORY_URL
+    newTag: latest
