@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pagamento-config
+  namespace: oficina-pagamento
+data:
+  AWS_REGION: us-east-1
+  # Sobrescritos pelo overlay com os outputs do Terraform do serviço.
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: pagamento
+  POSTGRES_DB: oficina_pagamento
+  PAGAMENTO_EVENTS_TOPIC_ARN: ""
+  PAGAMENTO_COMMANDS_QUEUE_URL: ""
+  # Base pública deste serviço: URL de retorno do comprador depois do checkout.
+  PUBLIC_BASE_URL: http://localhost:8000
+  MERCADO_PAGO_BASE_URL: https://api.mercadopago.com
+  PAYMENT_EXPIRATION: P3D
+  RECONCILE_INTERVAL_SECONDS: "30"
+  ADMIN_USERNAME: admin
+  JWT_ALGORITHM: HS256
+  LOG_LEVEL: INFO
+  SMTP_ENABLED: "false"
+  SMTP_HOST: ""
+  SMTP_PORT: "587"
+  SMTP_FROM: ""
+  SMTP_USERNAME: ""
+  # ADR-0007: só ativa de fato com NEW_RELIC_LICENSE_KEY (secret) definida.
+  NEW_RELIC_APP_NAME: oficina-mecanica-pagamento
+  NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"

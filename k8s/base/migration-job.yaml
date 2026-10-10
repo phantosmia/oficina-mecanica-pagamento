@@ -1,0 +1,35 @@
+# Aplica as migrations antes do rollout. Jobs são imutáveis: o pipeline de
+# deploy apaga o Job anterior antes de aplicar. A API só fica "ready" quando o
+# schema está na versão esperada (/ready).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pagamento-migrations
+  namespace: oficina-pagamento
+  labels:
+    app.kubernetes.io/name: pagamento-migrations
+    app.kubernetes.io/part-of: oficina-mecanica
+spec:
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pagamento-migrations
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: oficina-mecanica-pagamento:latest
+          imagePullPolicy: Always
+          args: ["migrate"]
+          envFrom:
+            - configMapRef:
+                name: pagamento-config
+            - secretRef:
+                name: pagamento-secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
