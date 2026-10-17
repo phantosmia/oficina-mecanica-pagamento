@@ -1,5 +1,7 @@
 # oficina-mecanica-pagamento
 
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=phantosmia_oficina-mecanica-pagamento&metric=alert_status)](https://sonarcloud.io/summary/overall?id=phantosmia_oficina-mecanica-pagamento) [![Cobertura](https://sonarcloud.io/api/project_badges/measure?project=phantosmia_oficina-mecanica-pagamento&metric=coverage)](https://sonarcloud.io/component_measures?id=phantosmia_oficina-mecanica-pagamento&metric=coverage)
+
 Microsserviço de **Pagamento** do sistema da oficina mecânica (Tech Challenge FIAP, Fase 4): cria a **cobrança no Mercado Pago** depois que o cliente aprova o orçamento, envia o **link de pagamento**, confirma o pagamento e, quando a saga é compensada, **cancela** a cobrança ou **estorna** o pagamento.
 
 É um dos 6 microsserviços do sistema. A divisão, a saga e o contrato entre os serviços estão documentados no repositório principal, [oficina-mecanica-fiap](https://github.com/phantosmia/oficina-mecanica-fiap):
