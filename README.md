@@ -145,6 +145,7 @@ Comportamentos conferidos no sandbox pelo navegador (2026-10-10):
 - **Pagamento aprovado**: a cobrança vai a `processed / accredited` e o comprador volta para `/pagamentos/{charge_id}/retorno`, que já mostra "Pagamento confirmado" (a confirmação veio por esse caminho).
 - **Cartão recusado não encerra a cobrança**: ela vai a `action_required / waiting_retry`, com a tentativa registrada como `failed`, e o checkout oferece outro cartão ou outro meio. Este serviço trata `action_required` como pendente: a saga continua esperando, e a recusa definitiva só vem com a expiração (`PAYMENT_EXPIRATION`) ou com o prazo de pagamento da saga.
 - **Cartão salvo na conta do comprador de teste ignora o nome digitado** e aprova; para testar recusa, use "Novo cartão".
+- **"Uma das partes com as quais você está tentando efetuar o pagamento é de teste"** (conferido em 2026-10-17): quem está pagando não é o comprador de teste. Acontece se o navegador estiver logado numa conta real do Mercado Pago, ou numa janela anônima, onde o checkout entra como convidado sem pedir login. Solução: numa janela anônima, entre primeiro em mercadopago.com.br com o **comprador de teste** e só então abra o link de pagamento.
 - **Cartões de outras páginas da documentação** (ex.: `5031 4332 1540 6351`, que aparece em outros produtos do Mercado Pago) são rejeitados por este checkout com "A transação não aceita este meio de pagamento".
 
 ### Testes
